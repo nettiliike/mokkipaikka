@@ -28,8 +28,14 @@ function normalize(id: string, data: Record<string, any>): Cottage {
 }
 
 export async function getPublishedCottages() {
-  const snap = await getDocs(collection(db, "cottages"));
-  return snap.docs.map(d => normalize(d.id, d.data())).filter(c => c.published !== false);
+  const cottagesQuery = query(
+    collection(db, "cottages"),
+    where("published", "==", true)
+  );
+
+  const snap = await getDocs(cottagesQuery);
+
+  return snap.docs.map(d => normalize(d.id, d.data()));
 }
 export async function getCottage(id: string) {
   const snap = await getDoc(doc(db, "cottages", id));
