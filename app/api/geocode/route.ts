@@ -1,0 +1,2 @@
+import { NextRequest, NextResponse } from "next/server";
+export async function GET(req:NextRequest){const q=req.nextUrl.searchParams.get("q");if(!q)return NextResponse.json({}, {status:400});const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fi&q=${encodeURIComponent(q)}`;const r=await fetch(url,{headers:{"User-Agent":"Mokkipaikka.fi demo"},next:{revalidate:86400}});const data=await r.json();if(!data[0])return NextResponse.json({});return NextResponse.json({latitude:Number(data[0].lat),longitude:Number(data[0].lon)});}
