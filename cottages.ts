@@ -42,6 +42,12 @@ export async function getOwnerCottages(ownerId: string) {
 }
 export async function saveCottage(cottage: Partial<Cottage> & { id: string }) {
   const { id, ...data } = cottage;
-  await setDoc(doc(db, "cottages", id), data, { merge: true });
+
+  // Poistetaan kaikki undefined-arvot ennen tallennusta
+  const cleanData = Object.fromEntries(
+    Object.entries(data).filter(([_, value]) => value !== undefined)
+  );
+
+  await setDoc(doc(db, "cottages", id), cleanData, { merge: true });
 }
 export async function removeCottage(id: string) { await deleteDoc(doc(db, "cottages", id)); }
