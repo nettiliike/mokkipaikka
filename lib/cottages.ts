@@ -1,10 +1,26 @@
 "use client";
-import { collection, deleteDoc, deleteField, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
+
+import {
+  collection,
+  deleteDoc,
+  deleteField,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { db } from "./firebase";
 import type { Cottage } from "./types";
 
 function normalize(id: string, data: Record<string, any>): Cottage {
-  const images = Array.isArray(data.images) ? data.images : data.image ? [data.image] : [];
+  const images = Array.isArray(data.images)
+    ? data.images
+    : data.image
+    ? [data.image]
+    : [];
+
   return {
     id,
     name: data.name || "Nimetön mökki",
@@ -19,38 +35,74 @@ function normalize(id: string, data: Record<string, any>): Cottage {
     image: images[0] || "/hero.jpg",
     images,
     amenities: data.amenities || {},
-    blockedRanges: data.blockedRanges || data.bookings || [],
+    blockedRanges: data.blockedRanges || [],
     published: data.published !== false,
-    latitude: Number(data.latitude) || undefined,
-    longitude: Number(data.longitude) || undefined,
-    createdAt: data.createdAt,
+    latitude:
+      data.latitude !== undefined ? Number(data.latitude) : undefined,
+    longitude:
+      data.longitude !== undefined ? Number(data.longitude) : undefined,
+    createdAt: data.createdAt ?? null,
   };
 }
 
 export async function getPublishedCottages() {
-  const cottagesQuery = query(
+  const q = query(
     collection(db, "cottages"),
     where("published", "==", true)
   );
 
-  const snap = await getDocs(cottagesQuery);
+  const snap = await getDocs(q);
 
-  return snap.docs.map(d => normalize(d.id, d.data()));
+  return snap.docs.map((d) => normalize(d.id, d.data()));
 }
+
 export async function getCottage(id: string) {
   const snap = await getDoc(doc(db, "cottages", id));
-  return snap.exists() ? normalize(snap.id, snap.data()) : null;
+
+  if (!snap.exists()) return null;
+
+  return normalize(snap.id, snap.data());
 }
+
 export async function getOwnerCottages(ownerId: string) {
-  const snap = await getDocs(query(collection(db, "cottages"), where("ownerId", "==", ownerId)));
-  return snap.docs.map(d => normalize(d.id, d.data()));
-}
-export async function saveCottage(cottage: Partial<Cottage> & { id: string }) {
-  const { id, ...data } = cottage;
-  const cleanData = Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined)
+  const q = query(
+    collection(db, "cottages"),
+    where("ownerId", "==", ownerId)
   );
-  // Poistetaan vanha julkinen sähköpostikenttä mahdollisista aiemmista ilmoituksista.
-  await setDoc(doc(db, "cottages", id), { ...cleanData, email: deleteField() }, { merge: true });
+
+  const snap = await getDocs(q);
+
+  return snap.docs.map((d) => normalize(d.id, d.data()));
 }
-export async function removeCottage(id: string) { await deleteDoc(doc(db, "cottages", id)); }
+
+export async function saveCottage(
+  cottage: Partial<Cottage> & { id: string }
+) {
+  const { id, ...data } = cottage;
+
+  const cleanData = Object.fromEntries(
+    Object.entries(data).filter(
+      ([, value]) => value !== undefined
+    )
+  );
+
+  await setDoc(
+    doc(db, "cottages", id),
+    {
+      ...cleanData,
+
+      // Mökki on oletuksena julkaistu
+      published: cleanData.published !== false,
+
+      // Vanha sähköposti poistetaan dokumentista
+      email: deleteField(),
+    },
+    {
+      merge: true,
+    }
+  );
+}
+
+export async function removeCottage(id: string) {
+  await deleteDoc(doc(db, "cottages", id));
+}
