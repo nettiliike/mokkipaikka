@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { getCottage } from "@/lib/cottages";
 import { createInquiry } from "@/lib/inquiries";
 import type { Cottage } from "@/lib/types";
-import AvailabilityCalendar from "./AvailabilityCalendar";
+import AvailabilityCalendar from "./availability-calendar";
 import { MapPin, Users, Phone, MessageSquare } from "lucide-react";
 
 export default function CottageDetailClient({id}:{id:string}){
