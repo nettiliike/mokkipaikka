@@ -1,60 +1,10 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
     match /cottages/{cottageId} {
-      // Julkaistut mökit ovat kaikkien luettavissa.
-      // Omistaja saa lukea myös oman julkaisemattoman mökkinsä.
-      allow read: if resource.data.published == true
-        || (request.auth != null
-          && resource.data.ownerId == request.auth.uid);
-
-      // Vain kirjautunut käyttäjä voi luoda mökin omiin nimiinsä.
-      allow create: if request.auth != null
-        && request.resource.data.ownerId == request.auth.uid;
-
-      // Vain omistaja voi muokata mökkiä.
-      // ownerId:tä ei voi samalla vaihtaa toiselle käyttäjälle.
-      allow update: if request.auth != null
-        && resource.data.ownerId == request.auth.uid
-        && request.resource.data.ownerId == request.auth.uid;
-
-      // Vain omistaja voi poistaa mökin.
-      allow delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
-    }
-
-    match /ownerContacts/{ownerId} {
-      // Yhteystiedot ovat vain kyseisen käyttäjän itsensä nähtävissä
-      // ja muokattavissa.
-      allow read, create, update, delete: if request.auth != null
-        && request.auth.uid == ownerId;
-    }
-
-    match /inquiries/{inquiryId} {
-      // Kuka tahansa voi lähettää yhteydenoton julkaistuun mökkiin.
-      // Samalla tarkistetaan, että ownerId vastaa mökin oikeaa omistajaa.
-      allow create: if request.resource.data.ownerId is string
-        && request.resource.data.cottageId is string
-        && request.resource.data.name is string
-        && request.resource.data.email is string
-        && request.resource.data.message is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 120
-        && request.resource.data.email.size() > 3
-        && request.resource.data.email.size() <= 320
-        && request.resource.data.message.size() > 0
-        && request.resource.data.message.size() <= 4000
-        && exists(/databases/$(database)/documents/cottages/$(request.resource.data.cottageId))
-        && get(/databases/$(database)/documents/cottages/$(request.resource.data.cottageId)).data.published == true
-        && get(/databases/$(database)/documents/cottages/$(request.resource.data.cottageId)).data.ownerId
-          == request.resource.data.ownerId;
-
-      // Vain mökin omistaja voi lukea, muokata tai poistaa
-      // hänelle saapuneita yhteydenottoja.
-      allow read, update, delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+      allow read: if resource.data.published == true || (request.auth != null && resource.data.ownerId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
   }
 }
