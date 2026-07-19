@@ -1,5 +1,5 @@
 "use client";
-import { collection, deleteDoc, deleteField, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc, where } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Cottage } from "./types";
 
@@ -15,6 +15,7 @@ function normalize(id: string, data: Record<string, any>): Cottage {
     description: data.description || "",
     owner: data.owner || "",
     ownerId: data.ownerId || "",
+    email: data.email || "",
     phone: data.phone || "",
     image: images[0] || "/hero.jpg",
     images,
@@ -28,14 +29,8 @@ function normalize(id: string, data: Record<string, any>): Cottage {
 }
 
 export async function getPublishedCottages() {
-  const cottagesQuery = query(
-    collection(db, "cottages"),
-    where("published", "==", true)
-  );
-
-  const snap = await getDocs(cottagesQuery);
-
-  return snap.docs.map(d => normalize(d.id, d.data()));
+  const snap = await getDocs(collection(db, "cottages"));
+  return snap.docs.map(d => normalize(d.id, d.data())).filter(c => c.published !== false);
 }
 export async function getCottage(id: string) {
   const snap = await getDoc(doc(db, "cottages", id));
@@ -47,10 +42,12 @@ export async function getOwnerCottages(ownerId: string) {
 }
 export async function saveCottage(cottage: Partial<Cottage> & { id: string }) {
   const { id, ...data } = cottage;
+
+  // Poistetaan kaikki undefined-arvot ennen tallennusta
   const cleanData = Object.fromEntries(
-    Object.entries(data).filter(([, value]) => value !== undefined)
+    Object.entries(data).filter(([_, value]) => value !== undefined)
   );
-  // Poistetaan vanha julkinen sähköpostikenttä mahdollisista aiemmista ilmoituksista.
-  await setDoc(doc(db, "cottages", id), { ...cleanData, email: deleteField() }, { merge: true });
+
+  await setDoc(doc(db, "cottages", id), cleanData, { merge: true });
 }
 export async function removeCottage(id: string) { await deleteDoc(doc(db, "cottages", id)); }

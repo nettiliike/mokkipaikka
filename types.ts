@@ -10,6 +10,7 @@ export type Cottage = {
   description: string;
   owner?: string;
   ownerId?: string;
+  email?: string;
   phone?: string;
   image?: string;
   images?: string[];
